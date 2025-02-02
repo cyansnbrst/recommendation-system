@@ -1,0 +1,166 @@
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.watch=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  profiles_service:
+    build: ./profiles-service
+    ports:
+      - "8081:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.profiles_service.rule=PathPrefix(`/profiles`)"
+      - "traefik.http.services.profiles_service.loadbalancer.server.port=8080"
+    depends_on:
+      - postgres
+      - kafka
+
+  auth_service:
+    build: ./auth-service
+    ports:
+      - "8082:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth_service.rule=PathPrefix(`/auth`)"
+      - "traefik.http.services.auth_service.loadbalancer.server.port=8080"
+    depends_on:
+      - postgres
+
+  products_service:
+    build: ./products-service
+    ports:
+      - "8083:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.products_service.rule=PathPrefix(`/products`)"
+      - "traefik.http.services.products_service.loadbalancer.server.port=8080"
+    depends_on:
+      - postgres
+      - kafka
+
+  recommendations_service:
+    build: ./recommendations-service
+    ports:
+      - "8084:8080"
+      - "7070:7070"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.recommendations_service.rule=PathPrefix(`/recommendations`)"
+      - "traefik.http.services.recommendations_service.loadbalancer.server.port=8080"
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+
+  analytics_service:
+    build: ./analytics-service
+    ports:
+      - "8085:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.analytics_service.loadbalancer.server.port=8080"
+    depends_on:
+      - postgres
+      - kafka
+
+  redis:
+    image: redis:6.0.9-alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    
+  migrate:
+    image: migrate/migrate
+    container_name: migrate
+    entrypoint: [
+      "sh", "-c",
+      "migrate -path /migrations/profiles-service -database postgres://user:password@postgres:5432/profiles?sslmode=disable up &&
+      migrate -path /migrations/auth-service -database postgres://user:password@postgres:5432/users?sslmode=disable up &&
+      migrate -path /migrations/products-service -database postgres://user:password@postgres:5432/products?sslmode=disable up &&
+      migrate -path /migrations/recommendations-service -database postgres://user:password@postgres:5432/recommendations?sslmode=disable up &&
+      migrate -path /migrations/analytics-service -database postgres://user:password@postgres:5432/analytics?sslmode=disable up"
+    ]
+    volumes:
+      - ./profiles-service/migrations:/migrations/profiles-service
+      - ./auth-service/migrations:/migrations/auth-service
+      - ./products-service/migrations:/migrations/products-service
+      - ./recommendations-service/migrations:/migrations/recommendations-service
+      - ./analytics-service/migrations:/migrations/analytics-service
+    depends_on:
+      - postgres
+
+  kafka:
+    image: bitnami/kafka:latest
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+
+  kafka-init:
+      image: bitnami/kafka:latest
+      command: [ "/bin/bash", "-c", "/create_topics.sh"]
+      environment:
+        - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      depends_on:
+        kafka:
+          condition: service_started
+      volumes:
+        - type: bind
+          source: ./create_topics.sh
+          target: /create_topics.sh
+      init: true
+      
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:Z
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - '9090:9090'
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - '3000:3000'
+
+volumes:
+  db:
+  

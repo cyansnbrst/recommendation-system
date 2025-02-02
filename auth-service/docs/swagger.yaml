@@ -1,0 +1,104 @@
+basePath: /auth
+definitions:
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.SuccessResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  models.UserResponse:
+    properties:
+      is_admin:
+        type: boolean
+      user_uid:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: SSO API server
+  title: Auth Service API
+  version: "1.0"
+paths:
+  /authenticate:
+    get:
+      description: Validates and retrieves user's information about token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: successful login
+          schema:
+            $ref: '#/definitions/models.UserResponse'
+        "401":
+          description: invalid or missing authentication token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - cookieAuth: []
+      summary: Authenticate user
+      tags:
+      - auth
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Generates auth token for the user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: successful login
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: bad request error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: invalid authentication credentials
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Login user
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: succesful registration
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: bad request error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Register user
+      tags:
+      - auth
+securityDefinitions:
+  cookieAuth:
+    in: cookie
+    name: token
+    type: apiKey
+swagger: "2.0"

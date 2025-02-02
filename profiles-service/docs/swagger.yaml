@@ -1,0 +1,94 @@
+basePath: /profiles
+definitions:
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.Profile:
+    properties:
+      interests:
+        items:
+          type: string
+        type: array
+      location:
+        type: string
+      name:
+        type: string
+      user_uid:
+        type: string
+    type: object
+  models.ProfileResponse:
+    properties:
+      profile:
+        $ref: '#/definitions/models.Profile'
+    type: object
+  models.SuccessResponse:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API Server for view and edit user's profile
+  title: Profiles Service API
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Retrieves user's profile info, including location and preferences.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success response with profile
+          schema:
+            $ref: '#/definitions/models.ProfileResponse'
+        "404":
+          description: not found error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - cookieAuth: []
+      summary: Get user's profile info
+      tags:
+      - profiles
+  /edit:
+    put:
+      consumes:
+      - application/json
+      description: Retrieves user's profile info, including location and preferences.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: bad request error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: not found error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - cookieAuth: []
+      summary: Edit user's profile info
+      tags:
+      - profiles
+securityDefinitions:
+  cookieAuth:
+    in: cookie
+    name: token
+    type: apiKey
+swagger: "2.0"

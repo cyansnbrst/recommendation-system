@@ -1,0 +1,58 @@
+basePath: /recommendations
+definitions:
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.Recommendation:
+    properties:
+      id:
+        type: integer
+      product_id:
+        type: integer
+      user_uid:
+        type: string
+    type: object
+  models.RecommendationResponse:
+    properties:
+      recommendations:
+        items:
+          $ref: '#/definitions/models.Recommendation'
+        type: array
+    type: object
+info:
+  contact: {}
+  description: API Server for get user's recommendations
+  title: Recommendations Service API
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Retrieves personalized recommendations for the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success response with recommendations
+          schema:
+            $ref: '#/definitions/models.RecommendationResponse'
+        "404":
+          description: not found error if recommendations are unavailable
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - cookieAuth: []
+      summary: Get recommendations for user
+      tags:
+      - recommendations
+securityDefinitions:
+  cookieAuth:
+    in: cookie
+    name: token
+    type: apiKey
+swagger: "2.0"

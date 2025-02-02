@@ -1,0 +1,164 @@
+basePath: /products
+definitions:
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.Product:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      version:
+        type: integer
+    type: object
+  models.ProductResponse:
+    properties:
+      product:
+        $ref: '#/definitions/models.Product'
+    type: object
+  models.SuccessResponse:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API Server for view and edit products
+  title: Products Service API
+  version: "1.0"
+paths:
+  /create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new product (admin-only).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success response with product
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: bad request error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - cookieAuth: []
+      summary: Create a new product
+      tags:
+      - products
+  /delete/{id}:
+    delete:
+      description: Deletes an existing product (admin-only).
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success response with product
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: bad request error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: not found error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - cookieAuth: []
+      summary: Delete a product
+      tags:
+      - products
+  /update/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Edits an existing product (admin-only).
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success response with product
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: bad request error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: not found error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - cookieAuth: []
+      summary: Edit a product
+      tags:
+      - products
+  /view/{id}:
+    get:
+      description: Retrieves info about the product.
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success response with product
+          schema:
+            $ref: '#/definitions/models.ProductResponse'
+        "404":
+          description: not found error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - cookieAuth: []
+      summary: Get products's info
+      tags:
+      - products
+securityDefinitions:
+  cookieAuth:
+    in: cookie
+    name: token
+    type: apiKey
+swagger: "2.0"
